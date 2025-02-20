@@ -1,0 +1,59 @@
+name: Build, Test, and Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build_and_unit_test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+    - name: Use Node.js 20x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+    - name: Install npm depedencies
+      run: npm ci
+    - name: Execute Unit Test
+      run: npm run test:unit
+    - name: Display softuni username
+      run: echo "fikone"
+
+  build_and_ui_test:
+    needs: build_and_unit_test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+    - name: Use Node.js 20x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+    - name: Install npm depedencies
+      run: npm ci
+    - name: Install Playwright browsers
+      run: npx playwright install
+    - name: Start the app
+      run: npm run start &
+    - name: Execute UI Test
+      run: npm run test:ui
+
+  deploy:
+    needs: build_and_ui_test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to production
+        uses: johnbeynon/render-deploy-action@v0.0.8
+        with:
+          service-id: ${{ secrets.RENDER_SERVICE_ID }}
+          api-key: ${{ secrets.RENDER_API_KEY }}
+          wait-for-success: true
